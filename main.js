@@ -1,3 +1,4 @@
+//global variables for canvas, wall count, and the start button
 let cnv = document.getElementById("canvas");
 let ctx = cnv.getContext("2d");
 let wallAmount = document.getElementById("walls1")
@@ -7,6 +8,7 @@ let startButton = document.getElementById("start")
 cnv.width = 1200;
 cnv.height = 800;
 
+//handling the keydownsand keyups for tank movement
 let keyPressed = {}
 
 document.addEventListener("keydown", (e) => {
@@ -18,9 +20,8 @@ document.addEventListener("keyup", (e) => {
   keyPressed[keyPress] = false
 });
 
-
+//class encapsulating tank interactions
 class tank {
-
     // init the tank 
     constructor(color, xpos, ypos) {
       this.color = color
@@ -49,12 +50,14 @@ class tank {
       this.hit = false
     }
 
+    //updates bullets fired from tank
     updateBullets(board) {
         for (let i = 0; i < this.magazine.length; i++) {
           this.magazine[i].update(board)
       }
     }
   
+    //updates position of tank on the board
     updateTankPos() {
       let rotateMinusAngle = this.rotate - this.angle;
       let rotatePlusAngle = this.rotate + this.angle;
@@ -83,7 +86,7 @@ class tank {
       };
     }
   
-  
+    //draws the tanks turret
     drawTurret(tur) {
       let alpha = Math.asin(tur.width / 2 / tur.r),
         beta = Math.atan(tur.width / 2 / (tur.r + tur.l)),
@@ -107,7 +110,7 @@ class tank {
       ctx.fill();
     }
   
-    // draws the tank
+    // draws the tank (tank skeleton and turret)
     drawTank() {
       let poly = this.updateTankPos();
       ctx.beginPath();
@@ -126,22 +129,23 @@ class tank {
       this.drawTurret(this.turret);
     }
     
-    tankWallCol() {
+    //handles the tanks collision with the walls and edges of the board (currently in two different loops for blue walls and red walls because of complications regarding sets)
+    tankborderCol() {
       for (const item of Board.redWalls) {
         let wall = JSON.parse(item)
-        if (this.x + this.diagonal > wall.x * Board.wallW && this.x - this.diagonal < wall.x * Board.wallW + Board.wallW && this.y + this.diagonal > wall.y * Board.wallH && this.y - this.diagonal < wall.y * Board.wallH + Board.wallH || this.x + this.diagonal > cnv.width || this.x - this.diagonal < 0 || this.y + this.diagonal > cnv.height || this.y - this.diagonal < 0 ) {
+        if (this.x + this.width/2 > wall.x * Board.wallW && this.x - this.width/2 < wall.x * Board.wallW + Board.wallW && this.y + this.width/2 > wall.y * Board.wallH && this.y - this.width/2 < wall.y * Board.wallH + Board.wallH || this.x + this.width/2 > cnv.width || this.x - this.width/2 < 0 || this.y + this.width/2 > cnv.height || this.y - this.width/2 < 0 ) {
           return true
         }
       }
       for (const item of Board.blueWalls) {
         let wall = JSON.parse(item)
-        if (this.x + this.diagonal > wall.x * Board.wallW && this.x - this.diagonal < wall.x * Board.wallW + Board.wallW && this.y + this.diagonal > wall.y * Board.wallH && this.y - this.diagonal < wall.y * Board.wallH + Board.wallH || this.x + this.diagonal > cnv.width || this.x - this.diagonal < 0 || this.y + this.diagonal > cnv.height || this.y - this.diagonal < 0 ) {
+        if (this.x + this.width/2 > wall.x * Board.wallW && this.x - this.width/2 < wall.x * Board.wallW + Board.wallW && this.y + this.width/2 > wall.y * Board.wallH && this.y - this.width/2 < wall.y * Board.wallH + Board.wallH || this.x + this.width/2 > cnv.width || this.x - this.width/2 < 0 || this.y + this.width/2 > cnv.height || this.y - this.width/2 < 0 ) {
           return true
         }
       }
     }
 
-
+    //handles instances when the tank gets hit by a bullet
     tankBulletCol(otherTank) {
       let bullets = this.magazine.concat(otherTank.magazine) 
       for (let i = 0; i < bullets.length; i++) {
@@ -151,7 +155,7 @@ class tank {
       }
     } 
 
-
+    //fires a bullet from the tanks turret
     fireBullet() {
         if (!this.staggerBullet && this.magazine.length < 6) {
 
@@ -176,6 +180,7 @@ class tank {
           }
     }
 
+    //creates a stagger so bullets do not fire instantaneously 
     staggerTimer() {
         if (this.staggerBullet) {
             setTimeout(() => {
@@ -184,7 +189,7 @@ class tank {
         }
     }
 
-
+    //handles what happens upon specific keydowns
     keyDowns(upkey, downkey,rightkey,leftkey,shootkey) {
       if (keyPressed[leftkey]) {
         this.rotate += (-1 * this.rotateSpeed * Math.PI) / 180;
@@ -196,11 +201,11 @@ class tank {
     
       if (keyPressed[upkey]) {
         this.x += this.speed * Math.cos(this.rotate);
-        if (this.tankWallCol()) {
+        if (this.tankborderCol()) {
           this.x -= this.speed * Math.cos(this.rotate);
         }
         this.y += this.speed * Math.sin(this.rotate);
-        if (this.tankWallCol()) {
+        if (this.tankborderCol()) {
           this.y -= this.speed * Math.sin(this.rotate);
         }
         this.turret.x = this.x;
@@ -208,11 +213,11 @@ class tank {
         
       } else if (keyPressed[downkey]) {
         this.x -= this.speed * Math.cos(this.rotate);
-        if (this.tankWallCol()) {
+        if (this.tankborderCol()) {
           this.x += this.speed * Math.cos(this.rotate);
         }
         this.y -= this.speed * Math.sin(this.rotate);
-        if (this.tankWallCol()) {
+        if (this.tankborderCol()) {
           this.y += this.speed * Math.sin(this.rotate);
         }
         this.turret.x = this.x;
@@ -226,6 +231,7 @@ class tank {
 
 
   class bullet {
+    //creates a bullet object
     constructor(x, y, xspeed, yspeed) {
         this.x = x;
         this.y = y;
@@ -235,7 +241,8 @@ class tank {
         this.staggerBullet = false;
     }
 
-    wallCol() {
+    //checks for when bullet wallCols with borders of canvas
+    borderCol() {
         if (
           this.x + this.radius > cnv.width ||
           this.x - this.radius < 0
@@ -250,7 +257,8 @@ class tank {
         }
     }
 
-    collide(board) {
+    //checks when bullets colide with walls (currently using two different loops for red and blue walls because of complications with sets)
+    wallCol(board) {
         for (const item of board.redWalls) {
             let wall = JSON.parse(item)
             if (
@@ -282,13 +290,15 @@ class tank {
           return false;
     }
 
+    //handles all updates of the bullet including collision and positioning
     update(board){
         this.updateBulletPosX(board);
         this.updateBulletPosY(board);
-        this.wallCol();
+        this.borderCol();
         this.draw()
     }
 
+    //draws the bullets
     draw(){
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
@@ -296,21 +306,24 @@ class tank {
         ctx.fill();
     }
 
+    //updates position of bullet along the X axis
     updateBulletPosX(board) {
         this.x += this.dx
-        if (this.collide(board)) {
+        if (this.wallCol(board)) {
           this.x -= this.dx
           this.dx = -1 * (this.dx)
         }
       }
+      //updates position of bullets along the Y axis
       updateBulletPosY(board) {
         this.y += this.dy
-        if (this.collide(board)) {
+        if (this.wallCol(board)) {
           this.y -= this.dy
           this.dy = -1 * (this.dy)
         }
       }
 
+    //creates a timer for bullets to despawn or remove themselves off the board
     startDespawnTimer(magazine) {
         setTimeout(() => {
             magazine.shift();
@@ -320,6 +333,7 @@ class tank {
 
 
 class board {
+  //creates an object for the board
     constructor(boardCells) {
       this.boardCells = boardCells;
       this.drawable = false;
@@ -332,6 +346,7 @@ class board {
       this.start = false
     }
     
+    //checks for anytime there is a click outside the canvas
     outsideClickCheck(xpos,ypos) {
         if (xpos < 0 || xpos > cnv.width || ypos < 0 || ypos > cnv.height) {
             this.outsideClick = true;
@@ -341,11 +356,13 @@ class board {
           }
     }
 
+    //divides the canvas into board cells (makes an imaginary grid) and gets coordinates of the click on the grid
     getCanvasCoord(xpos,ypos) {
         this.xCoord = Math.floor(xpos / (cnv.width / this.boardCells));
         this.yCoord = Math.floor(ypos / (cnv.height / this.boardCells));
     }
 
+    //checks where user clicks and places walls accordingly in the blue walls set or red walls set
     addNewWall() {
         let newWall = {
             x: this.xCoord,
@@ -360,6 +377,7 @@ class board {
               }
     }
 
+    //handles the functions to fire off when there is a press on the canvas
     onPress(event) {
       if (this.start === true) return
       if (this.drawable === false) return;
@@ -376,6 +394,7 @@ class board {
       this.addNewWall()
     }
 
+    //code to draw the walls
     initWall(wallSet, color, wallCounter) {
         if (wallSet.size > 0) {
             for (const item of wallSet) {
@@ -392,11 +411,13 @@ class board {
           wallCounter.innerHTML = wallSet.size
     }
 
+    //code that draws walls for two wall sets
     drawWalls() {
         this.initWall(this.blueWalls, "#0062b6", wallAmount)
         this.initWall(this.redWalls, "#d81111", wall2Amount)
     }
 
+    //erases walls on mouse click
     eraseWall(event) {
       let xpos, ypos;
       let x = cnv.offsetLeft;
@@ -423,12 +444,14 @@ class board {
     }
 }
 
+//initialize the two tanks
 let shanka = new tank("#d81111", 1170, 770);
 let tanka = new tank("#0062b6", 30, 30);
 
-
+//initialize the board
 let Board = new board(40);
 
+//event listeners for clicking on the board to draw/erase walls
 document.addEventListener("mousedown", function (e) {
       if (!Board.eraseWall(e)) {
         Board.drawable = true;
@@ -443,7 +466,7 @@ startButton.addEventListener("click", function () {
   startButton.disabled = true
 })
 
-
+//animation loop that draws walls, tanks, and bullets, and checks for collision
 requestAnimationFrame(animate);
 function animate() {
   ctx.clearRect(0, 0, cnv.width, cnv.height);
